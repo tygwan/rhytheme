@@ -13,6 +13,11 @@
 
 </div>
 
+## 🚧 Development Status
+
+> **Current Phase**: 🏗️ Project Initialization & Infrastructure Setup
+> **Last Updated**: 2024.12.02
+
 ---
 
 ## 📖 프로젝트 소개
