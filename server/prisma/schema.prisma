@@ -1,6 +1,3 @@
-// This is your Prisma schema file
-// Learn more: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,11 +14,9 @@ model User {
   password  String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  
-  // Relations
   sessions  Session[]
   tracks    Track[]
-  
+
   @@map("users")
 }
 
@@ -32,15 +27,13 @@ model Session {
   isActive     Boolean  @default(true)
   isPublic     Boolean  @default(true)
   creatorId    String
-  creator      User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   beatData     Json     @default("{}")
   participants String[] @default([])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
-  // Relations
+  creator      User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   tracks       Track[]
-  
+
   @@map("sessions")
 }
 
@@ -49,16 +42,16 @@ model Track {
   title       String
   description String?
   sessionId   String
-  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   audioUrl    String?
   beatData    Json
   creatorId   String
-  creator     User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   likes       Int      @default(0)
   plays       Int      @default(0)
   isPublic    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+  creator     User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
   @@map("tracks")
 }
