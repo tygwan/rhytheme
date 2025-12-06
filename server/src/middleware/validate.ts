@@ -73,3 +73,8 @@ export const validateParams = (schema: ZodSchema) => {
         }
     };
 };
+
+/**
+ * Default export - validates request body
+ */
+export const validate = validateBody;

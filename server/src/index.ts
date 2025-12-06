@@ -9,6 +9,8 @@ import Redis from 'ioredis';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { asyncHandler } from './utils/asyncHandler';
 import authRoutes from './routes/auth';
+import sessionRoutes from './routes/session';
+import trackRoutes from './routes/track';
 
 // Load environment variables
 dotenv.config();
@@ -87,8 +89,10 @@ app.get('/api/health', asyncHandler(async (req, res) => {
     });
 }));
 
-// Auth routes
+// API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/sessions', sessionRoutes);
+app.use('/api/tracks', trackRoutes);
 
 // In-memory storage for session state (replace with Redis later)
 interface SessionState {

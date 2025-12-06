@@ -51,9 +51,13 @@ rhytheme/
 │   ├── src/
 │   │   ├── index.ts         # Main server
 │   │   ├── routes/
-│   │   │   └── auth.ts      # Auth API routes
+│   │   │   ├── auth.ts      # Auth API routes
+│   │   │   ├── session.ts   # Session API routes
+│   │   │   └── track.ts     # Track API routes
 │   │   ├── services/
-│   │   │   └── authService.ts
+│   │   │   ├── authService.ts
+│   │   │   ├── sessionService.ts
+│   │   │   └── trackService.ts
 │   │   ├── middleware/
 │   │   │   ├── auth.ts      # JWT middleware
 │   │   │   ├── validate.ts  # Zod validation
@@ -93,7 +97,7 @@ rhytheme/
 
 ## Current Status
 
-### Implemented (M0-M2 완료)
+### Implemented (M0-M3 완료)
 - Landing page UI
 - Session room with BeatSequencer (all 8 instruments working)
 - WebSocket real-time sync (basic)
@@ -113,15 +117,20 @@ rhytheme/
   - Zod validation schemas
   - Frontend login/register pages
   - AuthContext + useAuth hook
+- **Session & Track API** (M3)
+  - Session CRUD (create, read, update, delete)
+  - Session participation (join, leave)
+  - Session beat data management
+  - Track CRUD (create, read, update, delete)
+  - Track engagement (like, play count)
+  - Validation schemas for Session/Track
 
 ### Not Implemented
-- Session CRUD API (M3)
-- Track API (M3)
-- Track persistence (DB 저장)
 - Audio export
 - Dashboard/Gallery page
 - Server-side turn validation
 - Real-time enhancements (turn timeout, BPM sync)
+- Frontend integration with Session/Track API
 
 ## Commands
 
@@ -180,11 +189,17 @@ FRONTEND_URL=http://localhost:3000
 | `src/components/BeatSequencer.tsx` | 비트 시퀀서 | ✅ 완료 |
 | `src/hooks/useSocket.ts` | WebSocket 훅 | ✅ 완료 |
 | `src/hooks/useAuth.tsx` | Auth Context & Hook | ✅ 완료 |
-| `server/src/index.ts` | Express 서버 | ✅ Auth 통합 |
+| `server/src/index.ts` | Express 서버 | ✅ Session/Track 통합 |
 | `server/src/routes/auth.ts` | Auth API 라우트 | ✅ 완료 |
+| `server/src/routes/session.ts` | Session API 라우트 | ✅ 완료 |
+| `server/src/routes/track.ts` | Track API 라우트 | ✅ 완료 |
 | `server/src/services/authService.ts` | 인증 서비스 | ✅ 완료 |
+| `server/src/services/sessionService.ts` | 세션 서비스 | ✅ 완료 |
+| `server/src/services/trackService.ts` | 트랙 서비스 | ✅ 완료 |
 | `server/src/middleware/auth.ts` | JWT 미들웨어 | ✅ 완료 |
+| `server/src/middleware/validate.ts` | Zod 검증 | ✅ 완료 |
 | `server/src/middleware/errorHandler.ts` | 에러 핸들러 | ✅ 완료 |
+| `server/src/utils/validation.ts` | Zod 스키마 | ✅ Session/Track 추가 |
 | `server/prisma/schema.prisma` | DB 스키마 | ✅ 마이그레이션 완료 |
 | `server/.env` | 백엔드 환경변수 | ✅ 설정됨 |
 

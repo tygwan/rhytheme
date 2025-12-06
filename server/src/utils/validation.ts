@@ -45,9 +45,27 @@ export const createTrackSchema = z.object({
     beatData: z.array(z.array(z.boolean())),
 });
 
+// Session Update Schema
+export const updateSessionSchema = z.object({
+    title: z.string().min(1).max(100).optional(),
+    maxUsers: z.number().int().min(2).max(8).optional(),
+    isPublic: z.boolean().optional(),
+    isActive: z.boolean().optional(),
+});
+
+// Track Update Schema
+export const updateTrackSchema = z.object({
+    title: z.string().min(1).max(100).optional(),
+    description: z.string().max(500).optional(),
+    beatData: z.array(z.array(z.boolean())).optional(),
+    isPublic: z.boolean().optional(),
+});
+
 // Type exports
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
 export type CreateSessionInput = z.infer<typeof createSessionSchema>;
 export type CreateTrackInput = z.infer<typeof createTrackSchema>;
+export type UpdateSessionInput = z.infer<typeof updateSessionSchema>;
+export type UpdateTrackInput = z.infer<typeof updateTrackSchema>;
