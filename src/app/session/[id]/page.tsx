@@ -1,20 +1,29 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import BeatSequencer from '@/components/BeatSequencer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '@/hooks/useSocket';
+import { useAuth } from '@/hooks/useAuth';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const AVATARS = ['🎹', '🎸', '🥁', '🎷', '🎺', '🎻', '🎤', '🎧'];
 
 export default function SessionRoom() {
     const params = useParams();
+    const router = useRouter();
     const sessionId = params.id as string;
 
     const { socket, isConnected } = useSocket(sessionId);
+    const { user, accessToken, isAuthenticated } = useAuth();
     const [grid, setGrid] = useState<boolean[][] | null>(null);
+    const [showSaveModal, setShowSaveModal] = useState(false);
+    const [trackTitle, setTrackTitle] = useState('');
+    const [trackDescription, setTrackDescription] = useState('');
+    const [saveError, setSaveError] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     // Real Queue State
     const [queue, setQueue] = useState<{ id: string; name: string; avatar: string }[]>([]);
@@ -77,6 +86,62 @@ export default function SessionRoom() {
         socket.emit('finish-turn', sessionId);
     };
 
+    const handleSaveTrack = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaveError('');
+
+        if (!trackTitle.trim()) {
+            setSaveError('Title is required');
+            return;
+        }
+
+        if (!grid) {
+            setSaveError('No beat data to save');
+            return;
+        }
+
+        if (!isAuthenticated || !accessToken) {
+            setSaveError('You must be logged in to save tracks');
+            return;
+        }
+
+        setIsSaving(true);
+
+        try {
+            const response = await fetch(`${API_URL}/api/tracks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                    title: trackTitle,
+                    description: trackDescription || undefined,
+                    sessionId,
+                    beatData: grid,
+                    isPublic: true,
+                }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error?.message || 'Failed to save track');
+            }
+
+            const data = await response.json();
+            setShowSaveModal(false);
+            setTrackTitle('');
+            setTrackDescription('');
+
+            // Redirect to gallery to view the saved track
+            router.push('/gallery');
+        } catch (err) {
+            setSaveError(err instanceof Error ? err.message : 'Failed to save track');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <main className="min-h-screen bg-neutral-950 text-white flex flex-col">
             {/* Header */}
@@ -109,6 +174,14 @@ export default function SessionRoom() {
                             </div>
                         ))}
                     </div>
+                    {isAuthenticated && grid && (
+                        <button
+                            onClick={() => setShowSaveModal(true)}
+                            className="px-4 py-2 rounded-full bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold transition-colors"
+                        >
+                            Save Track
+                        </button>
+                    )}
                     <button className="px-4 py-2 rounded-full bg-white text-black text-sm font-bold hover:bg-neutral-200 transition-colors">
                         Share
                     </button>
@@ -236,6 +309,73 @@ export default function SessionRoom() {
                     )}
                 </div>
             </div>
+
+            {/* Save Track Modal */}
+            {showSaveModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gradient-to-br from-purple-900 to-blue-900 rounded-2xl p-8 max-w-md w-full">
+                        <h2 className="text-2xl font-bold text-white mb-6">Save Track to Gallery</h2>
+
+                        <form onSubmit={handleSaveTrack} className="space-y-4">
+                            {saveError && (
+                                <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
+                                    {saveError}
+                                </div>
+                            )}
+
+                            <div>
+                                <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-2">
+                                    Track Title
+                                </label>
+                                <input
+                                    id="title"
+                                    type="text"
+                                    value={trackTitle}
+                                    onChange={(e) => setTrackTitle(e.target.value)}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    placeholder="My Awesome Beat"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-2">
+                                    Description (Optional)
+                                </label>
+                                <textarea
+                                    id="description"
+                                    value={trackDescription}
+                                    onChange={(e) => setTrackDescription(e.target.value)}
+                                    rows={3}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    placeholder="Describe your track..."
+                                />
+                            </div>
+
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowSaveModal(false);
+                                        setSaveError('');
+                                    }}
+                                    className="flex-1 py-3 px-4 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-all"
+                                    disabled={isSaving}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? 'Saving...' : 'Save Track'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

@@ -97,7 +97,7 @@ rhytheme/
 
 ## Current Status
 
-### Implemented (M0-M4 완료)
+### Implemented (M0-M5 완료)
 - Landing page UI
 - Session room with BeatSequencer (all 8 instruments working)
 - WebSocket real-time sync (basic)
@@ -130,13 +130,17 @@ rhytheme/
   - Landing page with auth-aware navigation
   - Session create modal with validation
   - Track visualization in gallery
+- **Session Room Integration** (M5)
+  - Save track button in session room header
+  - Save track modal with title and description
+  - Track creation from session room with API integration
+  - Auto-redirect to gallery after saving
 
 ### Not Implemented
 - Audio export (download as WAV/MP3)
 - Server-side turn validation
 - Real-time enhancements (turn timeout, BPM sync)
-- Session beat data persistence from UI
-- Track creation from session room
+- Session beat data persistence with backend API
 
 ## Commands
 
