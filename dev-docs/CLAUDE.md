@@ -97,7 +97,7 @@ rhytheme/
 
 ## Current Status
 
-### Implemented (M0-M3 완료)
+### Implemented (M0-M4 완료)
 - Landing page UI
 - Session room with BeatSequencer (all 8 instruments working)
 - WebSocket real-time sync (basic)
@@ -124,13 +124,19 @@ rhytheme/
   - Track CRUD (create, read, update, delete)
   - Track engagement (like, play count)
   - Validation schemas for Session/Track
+- **Frontend Integration** (M4)
+  - Dashboard page (session list, create session)
+  - Gallery page (track list with sorting)
+  - Landing page with auth-aware navigation
+  - Session create modal with validation
+  - Track visualization in gallery
 
 ### Not Implemented
-- Audio export
-- Dashboard/Gallery page
+- Audio export (download as WAV/MP3)
 - Server-side turn validation
 - Real-time enhancements (turn timeout, BPM sync)
-- Frontend integration with Session/Track API
+- Session beat data persistence from UI
+- Track creation from session room
 
 ## Commands
 
@@ -182,9 +188,11 @@ FRONTEND_URL=http://localhost:3000
 
 | 파일 | 설명 | 상태 |
 |------|------|------|
-| `src/app/page.tsx` | 랜딩 페이지 | ✅ 완료 |
+| `src/app/page.tsx` | 랜딩 페이지 | ✅ Auth 통합 |
 | `src/app/login/page.tsx` | 로그인 페이지 | ✅ 완료 |
 | `src/app/register/page.tsx` | 회원가입 페이지 | ✅ 완료 |
+| `src/app/dashboard/page.tsx` | 대시보드 (세션 목록) | ✅ 완료 |
+| `src/app/gallery/page.tsx` | 갤러리 (트랙 목록) | ✅ 완료 |
 | `src/app/session/[id]/page.tsx` | 세션 룸 | ✅ 완료 |
 | `src/components/BeatSequencer.tsx` | 비트 시퀀서 | ✅ 완료 |
 | `src/hooks/useSocket.ts` | WebSocket 훅 | ✅ 완료 |

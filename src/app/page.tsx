@@ -1,7 +1,13 @@
+'use client';
+
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const { isAuthenticated, user, logout } = useAuth();
+  const router = useRouter();
+
   return (
     <main className="min-h-screen bg-neutral-950 text-white selection:bg-purple-500/30">
       {/* Navigation */}
@@ -11,18 +17,32 @@ export default function Home() {
             Rhythme<span className="text-purple-500">.</span>
           </Link>
           <div className="flex items-center gap-6 text-sm font-medium text-neutral-400">
-            <Link href="/dashboard" className="hover:text-white transition-colors">
+            <Link href="/gallery" className="hover:text-white transition-colors">
               Gallery
             </Link>
             <Link href="https://github.com/tygwan/rhytheme" target="_blank" className="hover:text-white transition-colors">
               GitHub
             </Link>
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-full bg-white text-black hover:bg-neutral-200 transition-colors"
-            >
-              Login
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link href="/dashboard" className="hover:text-white transition-colors">
+                  Dashboard
+                </Link>
+                <button
+                  onClick={logout}
+                  className="px-4 py-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+                >
+                  Logout ({user?.username})
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="px-4 py-2 rounded-full bg-white text-black hover:bg-neutral-200 transition-colors"
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </nav>
@@ -51,10 +71,16 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="px-8 py-4 rounded-full bg-purple-600 hover:bg-purple-500 text-white font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-purple-500/25">
-              Start New Session
+            <button
+              onClick={() => router.push(isAuthenticated ? '/dashboard' : '/register')}
+              className="px-8 py-4 rounded-full bg-purple-600 hover:bg-purple-500 text-white font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-purple-500/25"
+            >
+              {isAuthenticated ? 'Go to Dashboard' : 'Start New Session'}
             </button>
-            <button className="px-8 py-4 rounded-full bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-white font-medium transition-all">
+            <button
+              onClick={() => router.push('/gallery')}
+              className="px-8 py-4 rounded-full bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-white font-medium transition-all"
+            >
               Browse Gallery
             </button>
           </div>
