@@ -4,9 +4,21 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import { PrismaClient } from '@prisma/client';
+import Redis from 'ioredis';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { asyncHandler } from './utils/asyncHandler';
+import authRoutes from './routes/auth';
 
 // Load environment variables
 dotenv.config();
+
+// Initialize Prisma and Redis
+const prisma = new PrismaClient();
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    maxRetriesPerRequest: 3,
+    retryDelayOnFailover: 100,
+});
 
 const app = express();
 const httpServer = createServer(app);
@@ -36,14 +48,47 @@ const limiter = rateLimit({
 
 app.use('/api', limiter);
 
-// Routes
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        message: 'Rhythme API is running',
-        timestamp: new Date().toISOString()
+// Health Check - Enhanced with DB and Redis status
+app.get('/api/health', asyncHandler(async (req, res) => {
+    const startTime = Date.now();
+    const checks: Record<string, { status: string; latency?: number; error?: string }> = {};
+
+    // Check PostgreSQL
+    try {
+        const dbStart = Date.now();
+        await prisma.$queryRaw`SELECT 1`;
+        checks.database = { status: 'healthy', latency: Date.now() - dbStart };
+    } catch (error) {
+        checks.database = { status: 'unhealthy', error: (error as Error).message };
+    }
+
+    // Check Redis
+    try {
+        const redisStart = Date.now();
+        await redis.ping();
+        checks.redis = { status: 'healthy', latency: Date.now() - redisStart };
+    } catch (error) {
+        checks.redis = { status: 'unhealthy', error: (error as Error).message };
+    }
+
+    // Overall status
+    const isHealthy = Object.values(checks).every(c => c.status === 'healthy');
+
+    res.status(isHealthy ? 200 : 503).json({
+        success: true,
+        status: isHealthy ? 'healthy' : 'degraded',
+        message: 'Rhythme API',
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        responseTime: Date.now() - startTime,
+        checks,
+        environment: process.env.NODE_ENV || 'development',
     });
-});
+}));
+
+// Auth routes
+app.use('/api/auth', authRoutes);
 
 // In-memory storage for session state (replace with Redis later)
 interface SessionState {
@@ -181,11 +226,22 @@ io.on('connection', (socket) => {
     });
 });
 
-// Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Internal Server Error' });
-});
+// 404 handler for undefined routes
+app.use(notFoundHandler);
+
+// Global error handler (must be last)
+app.use(errorHandler);
+
+// Graceful shutdown
+const shutdown = async () => {
+    console.log('Shutting down gracefully...');
+    await prisma.$disconnect();
+    redis.disconnect();
+    process.exit(0);
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
 // Start server
 httpServer.listen(PORT, () => {
@@ -194,4 +250,4 @@ httpServer.listen(PORT, () => {
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
-export { app, io };
+export { app, io, prisma, redis };

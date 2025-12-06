@@ -36,18 +36,35 @@ rhytheme/
 ├── src/                      # Frontend (Next.js)
 │   ├── app/
 │   │   ├── page.tsx         # Landing page
+│   │   ├── layout.tsx       # Root layout with Providers
+│   │   ├── providers.tsx    # AuthProvider wrapper
+│   │   ├── login/           # Login page
+│   │   ├── register/        # Register page
 │   │   ├── session/[id]/    # Session room
 │   │   └── dashboard/       # Gallery (미구현)
 │   ├── components/
 │   │   └── BeatSequencer.tsx
 │   └── hooks/
-│       └── useSocket.ts
+│       ├── useSocket.ts
+│       └── useAuth.tsx      # Auth context & hook
 ├── server/                   # Backend (Express)
 │   ├── src/
-│   │   └── index.ts         # Main server
+│   │   ├── index.ts         # Main server
+│   │   ├── routes/
+│   │   │   └── auth.ts      # Auth API routes
+│   │   ├── services/
+│   │   │   └── authService.ts
+│   │   ├── middleware/
+│   │   │   ├── auth.ts      # JWT middleware
+│   │   │   ├── validate.ts  # Zod validation
+│   │   │   └── errorHandler.ts
+│   │   └── utils/
+│   │       ├── errors.ts    # Custom error classes
+│   │       ├── asyncHandler.ts
+│   │       └── validation.ts # Zod schemas
 │   └── prisma/
 │       └── schema.prisma    # DB schema
-└── docs/                     # Documentation
+└── dev-docs/                 # Development documentation
 ```
 
 ## Development Guidelines
@@ -76,23 +93,35 @@ rhytheme/
 
 ## Current Status
 
-### Implemented
+### Implemented (M0-M2 완료)
 - Landing page UI
-- Session room with BeatSequencer
+- Session room with BeatSequencer (all 8 instruments working)
 - WebSocket real-time sync (basic)
 - Turn-based queue system (UI)
 - Tone.js audio playback
-
-### Critical Bugs
-- `BeatSequencer.tsx:50-52`: `snare` 변수 미선언 (런타임 에러)
+- PostgreSQL 연결 (Railway)
+- Redis 연결 (Railway)
+- Prisma 마이그레이션 완료 (User, Session, Track 모델)
+- **Error Handling Framework** (M1)
+  - Custom errors (ValidationError, AuthError, NotFoundError)
+  - Global error handler middleware
+  - Enhanced health check with DB/Redis status
+- **Authentication System** (M2)
+  - User registration/login with bcrypt
+  - JWT access/refresh tokens
+  - Auth middleware for protected routes
+  - Zod validation schemas
+  - Frontend login/register pages
+  - AuthContext + useAuth hook
 
 ### Not Implemented
-- PostgreSQL/Redis 연결
-- Authentication system
-- REST API endpoints
-- Track persistence
+- Session CRUD API (M3)
+- Track API (M3)
+- Track persistence (DB 저장)
 - Audio export
 - Dashboard/Gallery page
+- Server-side turn validation
+- Real-time enhancements (turn timeout, BPM sync)
 
 ## Commands
 
@@ -145,11 +174,19 @@ FRONTEND_URL=http://localhost:3000
 | 파일 | 설명 | 상태 |
 |------|------|------|
 | `src/app/page.tsx` | 랜딩 페이지 | ✅ 완료 |
+| `src/app/login/page.tsx` | 로그인 페이지 | ✅ 완료 |
+| `src/app/register/page.tsx` | 회원가입 페이지 | ✅ 완료 |
 | `src/app/session/[id]/page.tsx` | 세션 룸 | ✅ 완료 |
-| `src/components/BeatSequencer.tsx` | 비트 시퀀서 | ⚠️ 버그 있음 |
+| `src/components/BeatSequencer.tsx` | 비트 시퀀서 | ✅ 완료 |
 | `src/hooks/useSocket.ts` | WebSocket 훅 | ✅ 완료 |
-| `server/src/index.ts` | Express 서버 | 🔄 기본만 |
-| `server/prisma/schema.prisma` | DB 스키마 | ✅ 정의됨 |
+| `src/hooks/useAuth.tsx` | Auth Context & Hook | ✅ 완료 |
+| `server/src/index.ts` | Express 서버 | ✅ Auth 통합 |
+| `server/src/routes/auth.ts` | Auth API 라우트 | ✅ 완료 |
+| `server/src/services/authService.ts` | 인증 서비스 | ✅ 완료 |
+| `server/src/middleware/auth.ts` | JWT 미들웨어 | ✅ 완료 |
+| `server/src/middleware/errorHandler.ts` | 에러 핸들러 | ✅ 완료 |
+| `server/prisma/schema.prisma` | DB 스키마 | ✅ 마이그레이션 완료 |
+| `server/.env` | 백엔드 환경변수 | ✅ 설정됨 |
 
 ## MCP Servers Available
 
