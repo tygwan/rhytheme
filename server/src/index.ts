@@ -4,10 +4,13 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import session from 'express-session';
+import passport from 'passport';
 import { PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { asyncHandler } from './utils/asyncHandler';
+import { configurePassport } from './config/passport';
 import authRoutes from './routes/auth';
 import sessionRoutes from './routes/session';
 import trackRoutes from './routes/track';
@@ -51,6 +54,23 @@ const limiter = rateLimit({
 });
 
 app.use('/api', limiter);
+
+// Session middleware
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'rhytheme-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+configurePassport();
 
 // Health Check - Enhanced with DB and Redis status
 app.get('/api/health', asyncHandler(async (req, res) => {
