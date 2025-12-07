@@ -40,6 +40,9 @@ const io = new Server(httpServer, {
 
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy for Railway/Vercel deployment
+app.set('trust proxy', 1);
+
 // Security Middleware
 app.use(helmet({
     contentSecurityPolicy: {
