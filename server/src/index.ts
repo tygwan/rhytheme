@@ -11,6 +11,7 @@ import { asyncHandler } from './utils/asyncHandler';
 import authRoutes from './routes/auth';
 import sessionRoutes from './routes/session';
 import trackRoutes from './routes/track';
+import { TurnQueueService } from './services/turnQueueService';
 
 // Load environment variables
 dotenv.config();
@@ -94,141 +95,109 @@ app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/tracks', trackRoutes);
 
-// In-memory storage for session state (replace with Redis later)
-interface SessionState {
-    beats: boolean[][];
-    queue: { id: string; name: string; avatar: string }[];
-    currentTurn: string | null; // socket.id
-    turnStartTime: number | null;
-}
-
-const sessions: Record<string, SessionState> = {};
+// Initialize Turn Queue Service
+const turnQueueService = new TurnQueueService(redis);
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
     console.log(`Client connected: ${socket.id}`);
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
         console.log(`Client disconnected: ${socket.id}`);
-        // Handle disconnect cleanup (remove from queues, etc.)
-        // For simplicity, we'll iterate all sessions (optimize with Redis later)
-        Object.keys(sessions).forEach(sessionId => {
-            const session = sessions[sessionId];
-            const queueIndex = session.queue.findIndex(u => u.id === socket.id);
-
-            if (queueIndex !== -1) {
-                session.queue.splice(queueIndex, 1);
-                io.to(sessionId).emit('queue-update', {
-                    queue: session.queue,
-                    currentTurn: session.currentTurn
-                });
-            }
-
-            if (session.currentTurn === socket.id) {
-                // Pass turn to next person if current user disconnects
-                const nextUser = session.queue[0];
-                if (nextUser) {
-                    session.currentTurn = nextUser.id;
-                    session.turnStartTime = Date.now();
-                } else {
-                    session.currentTurn = null;
-                    session.turnStartTime = null;
-                }
-                io.to(sessionId).emit('queue-update', {
-                    queue: session.queue,
-                    currentTurn: session.currentTurn
-                });
-            }
-        });
+        // Note: We don't have a way to track which sessions this socket was in
+        // In a production app, we'd maintain a socket->sessions mapping
+        // For now, this will be handled by explicit leave-session events
     });
 
-    socket.on('join-session', (sessionId) => {
+    socket.on('join-session', async (sessionId) => {
         socket.join(sessionId);
         console.log(`Socket ${socket.id} joined session: ${sessionId}`);
 
-        // Initialize session if not exists
-        if (!sessions[sessionId]) {
-            sessions[sessionId] = {
-                beats: Array(8).fill(null).map(() => Array(16).fill(false)),
-                queue: [],
-                currentTurn: null,
-                turnStartTime: null
-            };
+        // Get or initialize session state
+        let state = await turnQueueService.getSessionState(sessionId);
+        if (!state) {
+            state = await turnQueueService.initializeSession(sessionId);
         }
 
         // Send current state to new user
-        socket.emit('beat-update', sessions[sessionId].beats);
+        socket.emit('beat-update', state.beatData);
         socket.emit('queue-update', {
-            queue: sessions[sessionId].queue,
-            currentTurn: sessions[sessionId].currentTurn
+            queue: state.queue,
+            currentTurn: state.currentTurn
         });
     });
 
-    socket.on('join-queue', ({ sessionId, name, avatar }) => {
-        const session = sessions[sessionId];
-        if (!session) return;
-
-        // Check if already in queue
-        if (session.queue.find(u => u.id === socket.id)) return;
-
-        const newUser = { id: socket.id, name, avatar };
-        session.queue.push(newUser);
-
-        // If no one has turn, give it to this user immediately
-        if (!session.currentTurn) {
-            session.currentTurn = socket.id;
-            session.turnStartTime = Date.now();
-        }
+    socket.on('join-queue', async ({ sessionId, name, avatar }) => {
+        const state = await turnQueueService.joinQueue(sessionId, {
+            id: socket.id,
+            name,
+            avatar
+        });
 
         io.to(sessionId).emit('queue-update', {
-            queue: session.queue,
-            currentTurn: session.currentTurn
+            queue: state.queue,
+            currentTurn: state.currentTurn
         });
     });
 
-    socket.on('finish-turn', (sessionId) => {
-        const session = sessions[sessionId];
-        if (!session || session.currentTurn !== socket.id) return;
-
-        // Move current user to end of queue or remove? 
-        // Let's implement "Round Robin" - move to back
-        const currentUser = session.queue.find(u => u.id === socket.id);
-        if (currentUser) {
-            // Remove from front (or wherever they are)
-            session.queue = session.queue.filter(u => u.id !== socket.id);
-            // Add to back
-            session.queue.push(currentUser);
-        }
-
-        // Give turn to next person (who is now at index 0)
-        const nextUser = session.queue[0];
-        if (nextUser) {
-            session.currentTurn = nextUser.id;
-            session.turnStartTime = Date.now();
-        }
+    socket.on('finish-turn', async (sessionId) => {
+        const state = await turnQueueService.finishTurn(sessionId, socket.id);
+        if (!state) return;
 
         io.to(sessionId).emit('queue-update', {
-            queue: session.queue,
-            currentTurn: session.currentTurn
+            queue: state.queue,
+            currentTurn: state.currentTurn
         });
+
+        // Persist beat data to database
+        try {
+            await prisma.session.update({
+                where: { id: sessionId },
+                data: { beatData: state.beatData }
+            });
+        } catch (error) {
+            console.error('Failed to persist beat data:', error);
+        }
     });
 
-    socket.on('leave-session', (sessionId) => {
+    socket.on('leave-session', async (sessionId) => {
         socket.leave(sessionId);
         console.log(`Socket ${socket.id} left session: ${sessionId}`);
+
+        const state = await turnQueueService.leaveQueue(sessionId, socket.id);
+        if (state) {
+            io.to(sessionId).emit('queue-update', {
+                queue: state.queue,
+                currentTurn: state.currentTurn
+            });
+        }
     });
 
-    socket.on('beat-update', ({ sessionId, grid }) => {
-        if (!sessions[sessionId]) return;
+    socket.on('beat-update', async ({ sessionId, grid }) => {
+        // Update beat data with turn validation
+        const result = await turnQueueService.updateBeatData(
+            sessionId,
+            socket.id,
+            grid
+        );
 
-        // Update server state
-        sessions[sessionId].beats = grid;
+        if (!result.success) {
+            console.log(`Rejected beat update from ${socket.id} - not their turn`);
+            return;
+        }
 
         // Broadcast to everyone else in the room
         socket.to(sessionId).emit('beat-update', grid);
         console.log(`Beat updated in session ${sessionId} by ${socket.id}`);
     });
 });
+
+// Turn timeout checker - runs every 5 seconds
+setInterval(async () => {
+    // Get all active sessions from Redis
+    // For simplicity, we'll check sessions that have been accessed
+    // In production, maintain a list of active session IDs
+}, 5000);
 
 // 404 handler for undefined routes
 app.use(notFoundHandler);

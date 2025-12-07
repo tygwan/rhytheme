@@ -97,7 +97,7 @@ rhytheme/
 
 ## Current Status
 
-### Implemented (M0-M5 완료)
+### Implemented (M0-M6 완료)
 - Landing page UI
 - Session room with BeatSequencer (all 8 instruments working)
 - WebSocket real-time sync (basic)
@@ -135,12 +135,19 @@ rhytheme/
   - Save track modal with title and description
   - Track creation from session room with API integration
   - Auto-redirect to gallery after saving
+- **WebSocket Real-time Enhancements** (M6)
+  - Redis-based session state management
+  - Turn queue service with validation
+  - Server-side turn validation (only current turn holder can update beats)
+  - Beat data persistence to database on turn finish
+  - Turn timeout infrastructure (30 seconds)
+  - Real-time queue updates with WebSocket
 
 ### Not Implemented
 - Audio export (download as WAV/MP3)
-- Server-side turn validation
-- Real-time enhancements (turn timeout, BPM sync)
-- Session beat data persistence with backend API
+- Turn timeout automatic rotation (infrastructure ready, needs client sync)
+- BPM synchronization
+- Active session timeout monitoring
 
 ## Commands
 
