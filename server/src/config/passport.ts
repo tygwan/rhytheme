@@ -1,8 +1,16 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { PrismaClient } from '@prisma/client';
+import { TokenPayload } from '../services/authService';
 
 const prisma = new PrismaClient();
+
+// Extend Passport's User type to match our TokenPayload
+declare global {
+    namespace Express {
+        interface User extends TokenPayload {}
+    }
+}
 
 export function configurePassport() {
     // Serialize user for session
@@ -14,7 +22,16 @@ export function configurePassport() {
     passport.deserializeUser(async (id: string, done) => {
         try {
             const user = await prisma.user.findUnique({ where: { id } });
-            done(null, user);
+            if (!user) {
+                done(null, null);
+                return;
+            }
+            // Convert Prisma User to TokenPayload
+            const tokenPayload: TokenPayload = {
+                userId: user.id,
+                email: user.email,
+            };
+            done(null, tokenPayload);
         } catch (error) {
             done(error, null);
         }
@@ -64,7 +81,12 @@ export function configurePassport() {
                         }
                     }
 
-                    return done(null, user);
+                    // Convert Prisma User to TokenPayload
+                    const tokenPayload: TokenPayload = {
+                        userId: user.id,
+                        email: user.email,
+                    };
+                    return done(null, tokenPayload);
                 } catch (error) {
                     return done(error as Error, undefined);
                 }

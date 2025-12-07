@@ -2,18 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/authService';
 import { AuthError } from '../utils/errors';
 
-// Extend Express Request type to include user
-declare global {
-    namespace Express {
-        interface Request {
-            user?: {
-                userId: string;
-                email: string;
-            };
-        }
-    }
-}
-
 /**
  * Authentication middleware - requires valid JWT token
  */

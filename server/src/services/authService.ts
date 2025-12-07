@@ -12,7 +12,7 @@ const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 const SALT_ROUNDS = 12;
 
-interface TokenPayload {
+export interface TokenPayload {
     userId: string;
     email: string;
 }
@@ -80,7 +80,7 @@ export class AuthService {
 
         // Find user
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
+        if (!user || !user.password) {
             throw new AuthError('Invalid email or password');
         }
 
