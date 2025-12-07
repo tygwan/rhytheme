@@ -43,9 +43,42 @@ router.get(
             { expiresIn: '7d' }
         );
 
-        // Redirect to frontend with tokens
+        // Set tokens as httpOnly cookies
+        const isProduction = process.env.NODE_ENV === 'production';
+
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            maxAge: 60 * 60 * 1000, // 1 hour
+            path: '/',
+        });
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            path: '/',
+        });
+
+        // Also set user info in a readable cookie
+        res.cookie('user', JSON.stringify({
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            avatar: user.avatar
+        }), {
+            httpOnly: false, // Allow JS to read user info
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/',
+        });
+
+        // Redirect to frontend
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-        res.redirect(`${frontendUrl}/auth/callback?access_token=${accessToken}&refresh_token=${refreshToken}`);
+        res.redirect(`${frontendUrl}/auth/callback`);
     })
 );
 
