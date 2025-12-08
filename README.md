@@ -105,15 +105,14 @@ Rhytheme은 여러 사람이 **순서대로 비트를 쌓아가며** 함께 음�
 
 ---
 
-## 🔐 보안 기능
+## 🔐 보안
 
-- ✅ **Google OAuth 2.0** 인증
-- ✅ **httpOnly Cookies** - XSS 공격 방어
-- ✅ **Helmet Security Headers** - CSP, HSTS, X-Frame-Options
-- ✅ **CORS 설정 강화** - Origin 화이트리스트
-- ✅ **Rate Limiting** - DDoS 방어 (15분당 100 요청)
-- ✅ **Request Size Limits** - 10MB
-- ✅ **JWT Token** - Access (1h) + Refresh (7d)
+- ✅ Google OAuth 2.0 인증
+- ✅ Secure Cookie 설정
+- ✅ Security Headers (Helmet)
+- ✅ CORS 보호
+- ✅ Rate Limiting
+- ✅ Input Validation
 
 ---
 

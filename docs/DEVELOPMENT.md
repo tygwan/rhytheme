@@ -97,11 +97,11 @@ Rhytheme은 턴제 협업 비트 메이킹 플랫폼입니다. 최대 8명이 �
 - 비트 데이터 검증
 
 ### ✅ 보안 강화
-- Helmet 보안 헤더 (CSP, HSTS, X-Frame-Options)
-- httpOnly 쿠키로 토큰 저장 (XSS 방어)
-- CORS 설정 강화
-- Rate Limiting (15분당 100 요청)
-- Request Size Limits (10MB)
+- Security Headers 적용
+- Secure Cookie 설정
+- CORS 보호
+- Rate Limiting 적용
+- Input Validation
 
 ### ✅ 배포
 - Railway 백엔드 배포
@@ -402,59 +402,18 @@ TTL: 24 hours
 
 ---
 
-## 보안 설정
+## 보안
 
-### Helmet 보안 헤더
+프로젝트는 업계 표준 보안 관행을 따릅니다:
 
-```typescript
-{
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", FRONTEND_URL],
-      fontSrc: ["'self'", "data:"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true,
-  },
-  frameguard: { action: 'deny' },
-  noSniff: true,
-  xssFilter: true,
-}
-```
+- **Security Headers**: Helmet을 통한 보안 헤더 적용
+- **Authentication**: Google OAuth 2.0 + JWT 기반 인증
+- **Cookie Security**: Secure, httpOnly 설정 적용
+- **CORS Protection**: 허용된 Origin만 접근 가능
+- **Rate Limiting**: API 요청 제한 적용
+- **Input Validation**: 모든 입력 데이터 검증
 
-### CORS 설정
-
-```typescript
-{
-  origin: FRONTEND_URL,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['set-cookie'],
-}
-```
-
-### 쿠키 설정
-
-```typescript
-{
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? 'none' : 'lax',
-  maxAge: 60 * 60 * 1000, // 1 hour (access)
-  path: '/',
-}
-```
+> 상세 보안 설정은 소스 코드 참조
 
 ---
 
